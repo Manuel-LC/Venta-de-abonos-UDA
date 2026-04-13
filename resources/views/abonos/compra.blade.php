@@ -14,60 +14,56 @@
         <input type="text" name="nombre_apellidos"
             value="{{ old('nombre_apellidos', $datos['nombre_apellidos']) }}">
         @error('nombre_apellidos')
-        <p class="error">{{ $message }}</p>
+            <p class="error">{{ $message }}</p>
         @enderror
 
         <label>DNI</label>
         <input type="text" name="dni_aficionado"
-            value="{{ old('dni_aficionado', $datos['dni']) }}">
+            value="{{ old('dni_aficionado', $datos['dni']) }}"
+            placeholder="12345678A">
         @error('dni_aficionado')
-        <p class="error">{{ $message }}</p>
+            <p class="error">{{ $message }}</p>
         @enderror
 
         <label>Fecha de nacimiento</label>
         <input type="text" name="fecha_nacimiento"
-            value="{{ old('fecha_nacimiento', $datos['fecha_nacimiento']) }}">
+            value="{{ old('fecha_nacimiento', $datos['fecha_nacimiento']) }}"
+            placeholder="dd/mm/aaaa">
         @error('fecha_nacimiento')
-        <p class="error">{{ $message }}</p>
+            <p class="error">{{ $message }}</p>
         @enderror
 
         <label>Teléfono</label>
         <input type="tel" name="telefono_aficionado"
-            value="{{ old('telefono_aficionado', $datos['telefono']) }}">
+            value="{{ old('telefono_aficionado', $datos['telefono']) }}"
+            placeholder="612345678">
         @error('telefono_aficionado')
-        <p class="error">{{ $message }}</p>
+            <p class="error">{{ $message }}</p>
         @enderror
 
-        <label>Cuenta bancaria</label>
+        <label>Cuenta bancaria (IBAN)</label>
         <input type="text" name="cuenta_bancaria"
-            value="{{ old('cuenta_bancaria', $datos['cuenta']) }}">
+            value="{{ old('cuenta_bancaria', $datos['cuenta']) }}"
+            placeholder="ES0000000000000000000000">
         @error('cuenta_bancaria')
-        <p class="error">{{ $message }}</p>
+            <p class="error">{{ $message }}</p>
         @enderror
 
         <label>Tipo de abono</label>
-        <select name="tipo_abono">
-            <option value="">-</option>
-            @foreach($tipos_abono as $tipo)
-            <option value="{{ $tipo->id }}"
-                {{ old('tipo_abono') == $tipo->id ? 'selected' : '' }}>
-                {{ $tipo->descripcion }} ({{ $tipo->precio }} €)
-            </option>
-            @endforeach
-        </select>
+        <x-select-tipo-abono />
         @error('tipo_abono')
-        <p class="error">{{ $message }}</p>
+            <p class="error">{{ $message }}</p>
         @enderror
 
         <div class="control-row">
             <label>
                 <input type="checkbox" name="acepto_terminos" value="1"
-                {{ old('acepto_terminos') ? 'checked' : '' }}>
+                    {{ old('acepto_terminos') ? 'checked' : '' }}>
                 Acepto términos
             </label>
         </div>
         @error('acepto_terminos')
-        <p class="error">{{ $message }}</p>
+            <p class="error">{{ $message }}</p>
         @enderror
 
         <button type="submit">Comprar</button>

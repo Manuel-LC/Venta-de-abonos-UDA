@@ -11,12 +11,12 @@ Route::post('/', [AbonosController::class, 'procesarCompra'])->name('compra.proc
 // Ticket tras compra exitosa
 Route::get('/ticket/{id}', [AbonosController::class, 'ticket'])->name('ticket');
 
-// Listado de abonos — protegido con middleware de autenticación
-Route::middleware('auth.admin')->group(function () {
+// Se usa el middleware nativo 'auth' de Laravel
+Route::middleware('auth')->group(function () {
     Route::get('/abonos', [AbonosController::class, 'listado'])->name('listado');
 });
 
 // Autenticación
-Route::get('/login',  [UsuariosController::class, 'login'])->name('login');
-Route::post('/login', [UsuariosController::class, 'procesarLogin'])->name('login.procesar');
+Route::get('/login',   [UsuariosController::class, 'login'])->name('login');
+Route::post('/login',  [UsuariosController::class, 'procesarLogin'])->name('login.procesar');
 Route::post('/logout', [UsuariosController::class, 'logout'])->name('logout');

@@ -15,8 +15,6 @@ class AbonosController extends Controller
     // Muestra el formulario de compra
     public function compra(Request $request): View
     {
-        $tipos_abono = TipoAbono::all();
-
         // Lee cookies si existen
         $datos = [
             'nombre_apellidos' => $request->cookie('nombre_apellidos', ''),
@@ -26,7 +24,13 @@ class AbonosController extends Controller
             'cuenta'           => $request->cookie('cuenta', ''),
         ];
 
-        return view('abonos.compra', ['tipos_abono' => $tipos_abono, 'datos' => $datos]);
+        /*
+        |----------------------------------------------------------------------
+        | CAMBIO (componente): ya no se pasa $tipos_abono a la vista porque
+        | ahora el componente <x-select-tipo-abono> los carga por sí mismo.
+        |----------------------------------------------------------------------
+        */
+        return view('abonos.compra', compact('datos'));
     }
 
     // Procesa el formulario de compra
@@ -36,17 +40,42 @@ class AbonosController extends Controller
 
         // Guardar cookies durante 30 días
         $ttl = 60 * 24 * 30;
-        cookie()->queue('nombre_apellidos', $validated['nombre_apellidos'], $ttl);
-        cookie()->queue('dni',              $validated['dni_aficionado'],    $ttl);
-        cookie()->queue('fecha_nacimiento', $validated['fecha_nacimiento'],  $ttl);
-        cookie()->queue('telefono',         $validated['telefono_aficionado'], $ttl);
-        cookie()->queue('cuenta',           $validated['cuenta_bancaria'],   $ttl);
+        cookie()->queue('nombre_apellidos', $validated['nombre_apellidos'],     $ttl);
+        cookie()->queue('dni',              $validated['dni_aficionado'],        $ttl);
+        cookie()->queue('fecha_nacimiento', $validated['fecha_nacimiento'],      $ttl);
+        cookie()->queue('telefono',         $validated['telefono_aficionado'],   $ttl);
+        cookie()->queue('cuenta',           $validated['cuenta_bancaria'],       $ttl);
 
-        // Calcular edad
+        /*
+        |----------------------------------------------------------------------
+        | CAMBIO (fecha): se usa createFromFormat('d/m/Y', ...) porque el
+        | campo llega en formato español; antes la validación usaba 'date'
+        | (que espera Y-m-d) y podía devolver una edad incorrecta o errónea.
+        |----------------------------------------------------------------------
+        */
         $edad = Carbon::createFromFormat('d/m/Y', $validated['fecha_nacimiento'])->age;
 
-        // Obtener precio
-        $tipoAbono = TipoAbono::findOrFail($validated['tipo_abono']);
+        // Obtener precio base según tipo de abono
+        $tipoAbono  = TipoAbono::findOrFail($validated['tipo_abono']);
+        $precioBase = $tipoAbono->precio;
+
+        /*
+        |----------------------------------------------------------------------
+        | CAMBIO (precio): antes se aplicaba siempre el precio base sin tener
+        | en cuenta la tarifa especial. Las reglas correctas son:
+        |   - Niños/as (< 12 años):          rebaja fija de 80 €
+        |   - Jubilados/as (> 65 años):       rebaja del 50 % sobre el precio base
+        |   - Resto de abonados:              precio base sin descuento
+        |
+        | Se usa max(..., 0) para evitar precios negativos si el precio base
+        | fuera inferior a 80 €.
+        |----------------------------------------------------------------------
+        */
+        $precio = match(true) {
+            $edad < 12  => round(max($precioBase - 80, 0), 2),
+            $edad > 65  => round($precioBase * 0.50, 2),
+            default     => $precioBase,
+        };
 
         // Generar asiento único
         $codigoAsiento = Abono::generarAsientoUnico();
@@ -57,14 +86,14 @@ class AbonosController extends Controller
 
         // Insertar abono
         $abono = Abono::create([
-            'fecha'          => now(),
-            'abonado'        => "{$validated['nombre_apellidos']} - {$validated['dni_aficionado']}",
-            'edad'           => $edad,
-            'telefono'       => $validated['telefono_aficionado'],
-            'cuenta_bancaria'=> $validated['cuenta_bancaria'],
-            'tipo'           => $tipoAbono->id,
-            'asiento'        => $codigoAsiento,
-            'precio'         => $tipoAbono->precio,
+            'fecha'           => now(),
+            'abonado'         => "{$validated['nombre_apellidos']} - {$validated['dni_aficionado']}",
+            'edad'            => $edad,
+            'telefono'        => $validated['telefono_aficionado'],
+            'cuenta_bancaria' => $validated['cuenta_bancaria'],
+            'tipo'            => $tipoAbono->id,
+            'asiento'         => $codigoAsiento,
+            'precio'          => $precio,
         ]);
 
         return redirect()->route('ticket', $abono->id);
@@ -77,7 +106,7 @@ class AbonosController extends Controller
         return view('abonos.ticket', compact('abono'));
     }
 
-    // Listado de abonos (con autenticación)
+    // Listado de abonos (protegido con auth nativo)
     public function listado(): View
     {
         $abonos = Abono::with('tipoAbono')->orderByDesc('asiento')->get();

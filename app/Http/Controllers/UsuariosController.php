@@ -9,16 +9,17 @@ use Illuminate\View\View;
 
 class UsuariosController extends Controller
 {
-    // GET /login — Muestra el formulario
+    // GET /login
     public function login(): View|RedirectResponse
     {
-        if (session()->has('usuario')) {
+        if (Auth::check()) {
             return redirect()->route('listado');
         }
+ 
         return view('usuarios.login');
     }
-
-    // Procesa el login manua
+ 
+    // POST /login
     public function procesarLogin(Request $request): RedirectResponse
     {
         $request->validate([
@@ -28,27 +29,25 @@ class UsuariosController extends Controller
             'username.required' => 'El usuario es obligatorio.',
             'password.required' => 'La contraseña es obligatoria.',
         ]);
-
-        $username = $request->input('username');
-        $password = $request->input('password');
-
-        // Buscamos el usuario en la BD y verificamos hash
-        $usuario = \App\Models\Usuario::where('username', $username)->first();
-
-        if ($usuario && password_verify($password, $usuario->password)) {
-            session(['usuario' => $username]);
+ 
+        if (Auth::attempt($request->only('username', 'password'))) {
+            $request->session()->regenerate();
             return redirect()->route('listado');
         }
-
+ 
         return back()
-            ->withInput(['username' => $username])
+            ->withInput(['username' => $request->username])
             ->withErrors(['login' => 'Usuario o contraseña incorrectos.']);
     }
-
-    // Cierra la sesión
-    public function logout(): RedirectResponse
+ 
+    // POST /logout
+    public function logout(Request $request): RedirectResponse
     {
-        session()->forget('usuario');
+        Auth::logout();
+ 
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+ 
         return redirect()->route('compra');
     }
 }
