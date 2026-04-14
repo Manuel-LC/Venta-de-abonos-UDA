@@ -4,6 +4,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | API Key (AÑADIDO)
+    |--------------------------------------------------------------------------
+    | Clave usada por el middleware ApiKeyMiddleware para proteger los endpoints
+    | privados de la API REST. Cámbiala en .env antes de pasar a producción.
+    */
+    'api_key' => env('API_KEY', 'clave-api-cambiar-en-produccion'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Name
     |--------------------------------------------------------------------------
     |
